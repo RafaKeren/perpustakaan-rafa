@@ -17,26 +17,33 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Unzip and Fix Folder Structure
+      - name: Check and Unzip Files
         run: |
-          unzip -o *.zip || true
-          if [ ! -f "gradlew" ]; then
-            SUBFOLDER=$(find . -mindepth 2 -maxdepth 2 -name "gradlew" -exec dirname {} \;)
-            if [ -n "$SUBFOLDER" ]; then
-              echo "Memindahkan file dari $SUBFOLDER ke folder utama..."
-              cp -r $SUBFOLDER/* . 2>/dev/null || true
-              cp -r $SUBFOLDER/.* . 2>/dev/null || true
-            fi
+          echo "=== DAFTAR FILE DI REPO ==="
+          ls -la
+          
+          ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Mengekstrak file: $ZIP_FILE"
+            unzip -o "$ZIP_FILE"
+          else
+            echo "TIDAK ADA FILE ZIP!"
           fi
-          chmod +x gradlew || true
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -n "$GRADLEW_PATH" ]; then
+            PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+            echo "Project ditemukan di: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            echo "ERROR: File gradlew tidak ditemukan di dalam project/zip!"
+            exit 1
+          fi
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            **/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
