@@ -19,32 +19,34 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: true
 
-      - name: Unzip, Force Keystore, and Build
+      - name: Unzip, Keystore, and Build
         run: |
-          # 1. Ekstrak file zip
+          # 1. Ekstrak zip
           ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
             unzip -o "$ZIP_FILE"
           fi
 
-          # 2. Buat keystore di ROOT repo & sistem Android runner
+          # 2. Buat keystore di semua direktori
           mkdir -p ~/.android
           keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
-
-          # Gandakan keystore ke seluruh subfolder biar gak luput
           find . -type d -exec cp debug.keystore {}/ \; 2>/dev/null || true
 
-          # 3. Pindah ke letak file project
+          # 3. Pindah ke lokasi project
           SETTINGS_PATH=$(find . -name "settings.gradle*" | head -n 1)
           if [ -n "$SETTINGS_PATH" ]; then
             cd $(dirname "$SETTINGS_PATH")
           fi
 
+          # 4. Tambahkan RAM 4GB & matikan cache penyebab bentrok jar
+          export GRADLE_OPTS="-Dorg.gradle.jvmargs='-Xmx4096m -XX:MaxMetaspaceSize=1024m' -Dfile.encoding=UTF-8"
           gradle wrapper --gradle-version 8.2
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --no-configuration-cache --no-parallel
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
