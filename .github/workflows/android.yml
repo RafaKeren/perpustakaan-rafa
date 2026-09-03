@@ -19,10 +19,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          cache-disabled: true
 
-      - name: Unzip, Generate Wrapper, and Build
+      - name: Unzip, Fix Memory, and Build
         run: |
           ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
@@ -35,9 +33,8 @@ jobs:
             cd $(dirname "$SETTINGS_PATH")
           fi
 
-          gradle wrapper --gradle-version 8.2
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --no-configuration-cache
+          export GRADLE_OPTS="-Dorg.gradle.jvmargs='-Xmx3072m -XX:MaxMetaspaceSize=512m' -Dfile.encoding=UTF-8"
+          gradle assembleDebug --no-daemon --no-configuration-cache
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
