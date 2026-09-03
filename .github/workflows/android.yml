@@ -20,7 +20,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Unzip and Build APK
+      - name: Unzip, Generate Wrapper, and Build
         run: |
           ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
@@ -28,7 +28,14 @@ jobs:
             unzip -o "$ZIP_FILE"
           fi
 
-          gradle assembleDebug
+          SETTINGS_PATH=$(find . -name "settings.gradle*" | head -n 1)
+          if [ -n "$SETTINGS_PATH" ]; then
+            cd $(dirname "$SETTINGS_PATH")
+          fi
+
+          gradle wrapper --gradle-version 8.2
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
