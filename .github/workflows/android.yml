@@ -17,30 +17,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Check and Unzip Files
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Unzip and Build APK
         run: |
-          echo "=== DAFTAR FILE DI REPO ==="
-          ls -la
-          
           ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
             echo "Mengekstrak file: $ZIP_FILE"
             unzip -o "$ZIP_FILE"
-          else
-            echo "TIDAK ADA FILE ZIP!"
           fi
 
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          if [ -n "$GRADLEW_PATH" ]; then
-            PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-            echo "Project ditemukan di: $PROJECT_DIR"
-            cd "$PROJECT_DIR"
-            chmod +x gradlew
-            ./gradlew assembleDebug
-          else
-            echo "ERROR: File gradlew tidak ditemukan di dalam project/zip!"
-            exit 1
-          fi
+          gradle assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
